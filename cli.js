@@ -83,6 +83,7 @@ function connectProvider() {
 
 function getContract(provider) {
   const wallet = new ethers.Wallet(PRIVATE_KEY, provider)
+  console.log(`Using Wallet: ${wallet.address}`)
   console.log(`Contract Address: ${CONTRACT_ADDRESS}`)
   return new ethers.Contract(CONTRACT_ADDRESS, abi, wallet)
 }
