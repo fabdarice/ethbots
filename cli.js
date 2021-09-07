@@ -11,6 +11,8 @@ const RPC_URI = process.env.RPC_URI
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS
 const PRIVATE_KEY = process.env.PRIVATE_KEY
 const MULTIPLIER = args['multiplier'] || 2
+const MAX_GAS_GWEI = args['maxGas'] || 1000
+const MAX_GAS_WEI = ethers.utils.parseUnits(MAX_GAS_GWEI.toString(), 'gwei')
 
 if (require.main == module) {
   main()
@@ -22,6 +24,7 @@ async function main() {
   const provider = connectProvider()
   const contract = getContract(provider)
   console.log("Multiplier:", MULTIPLIER)
+  console.log(`Max Gas: ${ethers.utils.formatUnits(MAX_GAS_WEI, 'gwei')} Gwei`)
 
   while (true) {
     console.log('---------------------------------------------')
@@ -33,17 +36,25 @@ async function main() {
 // Minting function
 async function doSth(provider, contract) {
   try {
-    const attemptPriorityFee = await calculatePriority(provider)
-    console.log('Checking if mintToken would succeed..' )
+    const { attemptPriorityFee, totalGas } = await calculatePriority(provider)
 
+    // Check that we're not going above MAX_GAS_WEI
+    if (totalGas.gt(MAX_GAS_WEI)) {
+      console.log(`Exit. Total Gas ${ethers.utils.formatUnits(totalGas, "gwei")} Gwei > MAX_GAS`)
+      return
+    }
     const txValue = {
       value: ethers.utils.parseEther('0.07'),
-      maxPriorityFeePerGas: attemptPriorityFee.toHexString()
+      maxPriorityFeePerGas: attemptPriorityFee,
+      maxFeePerGas: MAX_GAS_WEI
     }
 
+    console.log('Checking if mintToken would succeed..' )
     await contract.callStatic.mintTokens(1, txValue)
+
     console.log('It should work! Attempting mintToken for real...')
     const tx = await contract.mintTokens(1, txValue)
+
     console.log(`Transaction sent: https://etherscan.io/tx/${tx.hash}`)
     process.exit(1)
   } catch (e) {
@@ -51,14 +62,17 @@ async function doSth(provider, contract) {
   }
 }
 
+
+// Calculate Gas Fee for EIP-1559 tx
 async function calculatePriority(provider) {
-    const feeData = await provider.getFeeData()
-    const baseFee = feeData.maxFeePerGas.sub(feeData.maxPriorityFeePerGas)
-    console.log('Current Base Fee (Gwei): ', ethers.utils.formatUnits(baseFee, 'gwei'))
-    console.log('Current Priority Fee (Gwei): ', ethers.utils.formatUnits(feeData.maxPriorityFeePerGas, 'gwei'))
-    const attemptPriorityFee = feeData.maxPriorityFeePerGas.mul(MULTIPLIER)
-    console.log('Trying Priority Fee (Gwei): ', ethers.utils.formatUnits(attemptPriorityFee, 'gwei'))
-    return attemptPriorityFee
+  const feeData = await provider.getFeeData()
+  const baseFee = feeData.maxFeePerGas.sub(feeData.maxPriorityFeePerGas)
+  console.log(`Current Base Fee: ${ethers.utils.formatUnits(baseFee, 'gwei')} Gwei`)
+  console.log(`Current Priority Fee: ${ethers.utils.formatUnits(feeData.maxPriorityFeePerGas, 'gwei')} Gwei `)
+  const attemptPriorityFee = feeData.maxPriorityFeePerGas.mul(MULTIPLIER)
+  const totalGas = attemptPriorityFee.add(baseFee)
+  console.log(`Trying Total Gas Fee: ${ethers.utils.formatUnits(totalGas, 'gwei')} Gwei `)
+  return {attemptPriorityFee, totalGas}
 }
 
 function connectProvider() {
