@@ -71,7 +71,7 @@ async function doSth(provider, contract) {
 // Calculate Gas Fee for EIP-1559 tx
 async function calculatePriority(provider) {
   const feeData = await provider.getFeeData()
-  const baseFee = feeData.maxFeePerGas.sub(feeData.maxPriorityFeePerGas)
+  const baseFee = feeData.maxFeePerGas.div(2)
   console.log(`Current Base Fee: ${ethers.utils.formatUnits(baseFee, 'gwei')} Gwei`)
   console.log(`Current Priority Fee: ${ethers.utils.formatUnits(feeData.maxPriorityFeePerGas, 'gwei')} Gwei `)
   const attemptPriorityFee = feeData.maxPriorityFeePerGas.mul(MULTIPLIER)
