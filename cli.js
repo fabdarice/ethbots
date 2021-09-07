@@ -22,7 +22,12 @@ async function main() {
   const provider = connectProvider()
   const contract = getContract(provider)
   console.log("Multiplier:", MULTIPLIER)
-  await doSth(provider, contract)
+
+  while (true) {
+    console.log('---------------------------------------------')
+    await doSth(provider, contract)
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
 }
 
 // Minting function
@@ -33,7 +38,7 @@ async function doSth(provider, contract) {
 
     const txValue = {
       value: ethers.utils.parseEther('0.07'),
-      maxPriorityFeePerGas: attemptPriorityFee
+      maxPriorityFeePerGas: attemptPriorityFee.toHexString()
     }
 
     await contract.callStatic.mintTokens(1, txValue)
@@ -48,7 +53,6 @@ async function doSth(provider, contract) {
 
 async function calculatePriority(provider) {
     const feeData = await provider.getFeeData()
-    console.log('---------------------------------------------')
     const baseFee = feeData.maxFeePerGas.sub(feeData.maxPriorityFeePerGas)
     console.log('Current Base Fee (Gwei): ', ethers.utils.formatUnits(baseFee, 'gwei'))
     console.log('Current Priority Fee (Gwei): ', ethers.utils.formatUnits(feeData.maxPriorityFeePerGas, 'gwei'))
