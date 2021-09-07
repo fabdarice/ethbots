@@ -77,7 +77,7 @@ async function calculatePriority(provider) {
 
 function connectProvider() {
   console.log(`Connected to ${RPC_URI}`)
-  const provider = new ethers.providers.JsonRpcProvider(RPC_URI)
+  const provider = new ethers.providers.WebSocketProvider(RPC_URI)
   return provider
 }
 
