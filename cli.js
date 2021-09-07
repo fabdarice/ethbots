@@ -65,7 +65,11 @@ async function mintToken(provider, contract) {
     if (e['errorArgs']) {
       console.log(e['errorArgs'])
     } else {
-      console.log(e)
+      if (e['error']['response']) {
+        console.log(e['error']['response'])
+      } else {
+        console.log(e)
+      }
     }
   }
 }
