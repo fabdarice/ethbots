@@ -59,7 +59,11 @@ async function doSth(provider, contract) {
     console.log(`Transaction sent: https://etherscan.io/tx/${tx.hash}`)
     process.exit(1)
   } catch (e) {
-    console.log(e['errorArgs'])
+    if (e['errorArgs']) {
+      console.log(e['errorArgs'])
+    } else {
+      console.log(e)
+    }
   }
 }
 
