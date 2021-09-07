@@ -32,21 +32,21 @@ async function main() {
 
   while (true) {
     console.log('---------------------------------------------')
-    await doSth(provider, contract)
+    await mintToken(provider, contract)
     await new Promise(resolve => setTimeout(resolve, DELAY_IN_MS));
   }
 }
 
 // Minting function
-async function doSth(provider, contract) {
+async function mintToken(provider, contract) {
   try {
-    const { tipFee, totalGas } = await calculateTip(provider)
-
+    const totalGas = await checkBelowMaxGas(provider)
     // Check that we're not going above MAX_GAS_WEI
     if (totalGas.gt(MAX_GAS_WEI)) {
       console.log(`Exit. Total Gas ${ethers.utils.formatUnits(totalGas, "gwei")} Gwei > MAX_GAS`)
       return
     }
+
     console.log('Checking if mintToken would succeed..' )
     await contract.callStatic.mintTokens(1, {
       value: ethers.utils.parseEther('0.07')
@@ -55,7 +55,7 @@ async function doSth(provider, contract) {
     console.log('It should work! Attempting mintToken for real...')
     const tx = await contract.mintTokens(1, {
       value: ethers.utils.parseEther('0.07'),
-      maxPriorityFeePerGas: tipFee,
+      maxPriorityFeePerGas: TIP_WEI,
       maxFeePerGas: MAX_GAS_WEI
     })
 
@@ -71,15 +71,14 @@ async function doSth(provider, contract) {
 }
 
 
-// Calculate Gas Fee for EIP-1559 tx
-async function calculateTip(provider) {
+async function checkBelowMaxGas(provider) {
   const feeData = await provider.getFeeData()
   const baseFee = feeData.maxFeePerGas.div(2)
   console.log(`Current Base Fee: ${ethers.utils.formatUnits(baseFee, 'gwei')} Gwei`)
-  const attemptPriorityFee = TIP_WEI
-  const totalGas = attemptPriorityFee.add(baseFee)
+  const totalGas = TIP_WEI.add(baseFee)
+
   console.log(`Attempting Total Gas: ${ethers.utils.formatUnits(totalGas, 'gwei')} Gwei `)
-  return {attemptPriorityFee, totalGas}
+  return totalGas
 }
 
 function connectProvider() {
