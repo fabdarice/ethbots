@@ -13,6 +13,8 @@ const PRIVATE_KEY = args['privKey'] || process.env.PRIVATE_KEY
 const MULTIPLIER = args['multiplier'] || 2
 const MAX_GAS_GWEI = args['maxGas'] || 1000
 const MAX_GAS_WEI = ethers.utils.parseUnits(MAX_GAS_GWEI.toString(), 'gwei')
+const TIP_GWEI = args['tip'] || 200
+const TIP_WEI = ethers.utils.parseUnits(TIP_GWEI.toString(), 'gwei')
 const DELAY_IN_MS = args['delay'] || 500
 
 if (require.main == module) {
@@ -26,6 +28,7 @@ async function main() {
   const contract = getContract(provider)
   console.log("Multiplier:", MULTIPLIER)
   console.log(`Max Gas: ${ethers.utils.formatUnits(MAX_GAS_WEI, 'gwei')} Gwei`)
+  console.log(`Tip: ${ethers.utils.formatUnits(TIP_WEI, 'gwei')} Gwei`)
 
   while (true) {
     console.log('---------------------------------------------')
@@ -37,7 +40,7 @@ async function main() {
 // Minting function
 async function doSth(provider, contract) {
   try {
-    const { attemptPriorityFee, totalGas } = await calculatePriority(provider)
+    const { tipFee, totalGas } = await calculateTip(provider)
 
     // Check that we're not going above MAX_GAS_WEI
     if (totalGas.gt(MAX_GAS_WEI)) {
@@ -52,7 +55,7 @@ async function doSth(provider, contract) {
     console.log('It should work! Attempting mintToken for real...')
     const tx = await contract.mintTokens(1, {
       value: ethers.utils.parseEther('0.07'),
-      maxPriorityFeePerGas: attemptPriorityFee,
+      maxPriorityFeePerGas: tipFee,
       maxFeePerGas: MAX_GAS_WEI
     })
 
@@ -69,14 +72,13 @@ async function doSth(provider, contract) {
 
 
 // Calculate Gas Fee for EIP-1559 tx
-async function calculatePriority(provider) {
+async function calculateTip(provider) {
   const feeData = await provider.getFeeData()
   const baseFee = feeData.maxFeePerGas.div(2)
   console.log(`Current Base Fee: ${ethers.utils.formatUnits(baseFee, 'gwei')} Gwei`)
-  console.log(`Current Priority Fee: ${ethers.utils.formatUnits(feeData.maxPriorityFeePerGas, 'gwei')} Gwei `)
-  const attemptPriorityFee = feeData.maxPriorityFeePerGas.mul(MULTIPLIER)
+  const attemptPriorityFee = TIP_WEI
   const totalGas = attemptPriorityFee.add(baseFee)
-  console.log(`Trying Total Gas Fee: ${ethers.utils.formatUnits(totalGas, 'gwei')} Gwei `)
+  console.log(`Attempting Total Gas: ${ethers.utils.formatUnits(totalGas, 'gwei')} Gwei `)
   return {attemptPriorityFee, totalGas}
 }
 
