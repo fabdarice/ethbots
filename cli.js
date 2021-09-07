@@ -29,7 +29,7 @@ async function main() {
   while (true) {
     console.log('---------------------------------------------')
     await doSth(provider, contract)
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 200));
   }
 }
 
@@ -43,17 +43,17 @@ async function doSth(provider, contract) {
       console.log(`Exit. Total Gas ${ethers.utils.formatUnits(totalGas, "gwei")} Gwei > MAX_GAS`)
       return
     }
-    const txValue = {
+    console.log('Checking if mintToken would succeed..' )
+    await contract.callStatic.mintTokens(1, {
+      value: ethers.utils.parseEther('0.07')
+    })
+
+    console.log('It should work! Attempting mintToken for real...')
+    const tx = await contract.mintTokens(1, {
       value: ethers.utils.parseEther('0.07'),
       maxPriorityFeePerGas: attemptPriorityFee,
       maxFeePerGas: MAX_GAS_WEI
-    }
-
-    console.log('Checking if mintToken would succeed..' )
-    await contract.callStatic.mintTokens(1, txValue)
-
-    console.log('It should work! Attempting mintToken for real...')
-    const tx = await contract.mintTokens(1, txValue)
+    })
 
     console.log(`Transaction sent: https://etherscan.io/tx/${tx.hash}`)
     process.exit(1)
