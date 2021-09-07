@@ -13,6 +13,7 @@ const PRIVATE_KEY = args['privKey'] || process.env.PRIVATE_KEY
 const MULTIPLIER = args['multiplier'] || 2
 const MAX_GAS_GWEI = args['maxGas'] || 1000
 const MAX_GAS_WEI = ethers.utils.parseUnits(MAX_GAS_GWEI.toString(), 'gwei')
+const DELAY_IN_MS = args['delay'] || 500
 
 if (require.main == module) {
   main()
@@ -29,7 +30,7 @@ async function main() {
   while (true) {
     console.log('---------------------------------------------')
     await doSth(provider, contract)
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise(resolve => setTimeout(resolve, DELAY_IN_MS));
   }
 }
 
